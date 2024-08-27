@@ -1,0 +1,254 @@
+import pandas as pd 
+import numpy as np
+import torch 
+import torch.nn as nn
+import torch.optim as Adam
+import gurobipy as gp
+from gurobipy import GRB    
+import gurobi_ml
+import matplotlib.pyplot as plt
+from gurobi_ml import add_predictor_constr
+from sklearn.model_selection import train_test_split
+
+torch.manual_seed(42)                                                        
+
+
+def simulator(t,action):
+    sin_value = np.sin(t*0.2)*2
+    decay = -1 
+    observation = sin_value + decay*action
+    return observation, sin_value
+
+num_timesteps = 100 
+window_size = 10
+all_actions = np.zeros((num_timesteps,))
+all_observations = np.zeros((num_timesteps,))
+all_sin_values = np.zeros((num_timesteps,))
+
+# The agent can choose between 3 actions: 0, 1, 2
+# To get a training dataset, we choose actions randomly and simulate the environment.
+# all_actions and all_observations are passed to Gurobi lateron.
+# all_sin_values is only used for plotting.
+for t in range(num_timesteps):
+    samples = [0, 1, 2]
+    action = np.random.choice(samples)
+    all_actions[t] = action
+    observation, sin_value = simulator(t,action)
+    all_observations[t] = observation
+    all_sin_values[t] = sin_value
+
+# plot the sin value, observations and actions
+plt.plot(all_observations, label='observations')
+plt.plot(all_sin_values, label='sin value')
+plt.plot(all_actions, label='actions')
+plt.legend()
+
+
+# Define the simulator function
+def simulator(t, action):
+    sin_value = np.sin(t * 0.2) * 2
+    decay = -1 
+    observation = sin_value + decay * action
+    return observation, sin_value
+
+# Initialize parameters
+num_timesteps = 100
+window_size = 5
+all_actions = np.zeros((num_timesteps,))
+all_observations = np.zeros((num_timesteps,))
+all_sin_values = np.zeros((num_timesteps,))
+
+# Simulate the environment
+for t in range(num_timesteps):
+    samples = [0, 1, 2]
+    action = np.random.choice(samples)
+    all_actions[t] = action
+    observation, sin_value = simulator(t, action)
+    all_observations[t] = observation
+    all_sin_values[t] = sin_value
+
+# Prepare the input data (starting from window_size)
+input_data_list = []
+targets = []
+
+for t in range(window_size, num_timesteps):
+    input_observations = all_observations[t-window_size:t]
+    input_actions = all_actions[t-window_size:t]
+    
+    # Concatenate observations and actions
+    input_data = np.concatenate([input_observations, input_actions], axis=0)
+    
+    # Store the input data and corresponding target
+    input_data_list.append(input_data)
+    targets.append(all_observations[t])  # Target is the observation at time `t`
+
+# Convert the data into numpy arrays
+input_data_array = np.array(input_data_list)
+targets_array = np.array(targets)
+
+# Split data into training and validation sets
+train_inputs, val_inputs, train_targets, val_targets = train_test_split(
+    input_data_array, 
+    targets_array, 
+    test_size=0.2, 
+    random_state=42
+)
+
+# Convert the training and validation data to PyTorch tensors
+train_inputs = torch.tensor(train_inputs, dtype=torch.float32)
+val_inputs = torch.tensor(val_inputs, dtype=torch.float32)
+train_targets = torch.tensor(train_targets, dtype=torch.float32).view(-1, 1)
+val_targets = torch.tensor(val_targets, dtype=torch.float32).view(-1, 1)
+
+# Define the model
+nn_model = nn.Sequential(
+    nn.Linear(window_size * 2, 40),  # Accepts 10 inputs (5 observations + 5 actions)
+    nn.ReLU(),
+    nn.Linear(40, 1)
+)
+
+# Choose a loss function and optimizer
+loss_fn = nn.MSELoss()
+optimizer = torch.optim.Adam(nn_model.parameters(), lr=1e-3)
+
+# Train the model
+train_losses = []
+val_losses = []
+
+for epoch in range(1000):
+    # Set model to training mode
+    nn_model.train()
+    train_loss = 0.0
+    
+    # Training loop
+    optimizer.zero_grad()
+    outputs = nn_model(train_inputs)
+    loss = loss_fn(outputs, train_targets)
+    loss.backward()
+    optimizer.step()
+    train_loss = loss.item()
+    
+    # Validation loop
+    nn_model.eval()
+    with torch.no_grad():
+        val_outputs = nn_model(val_inputs)
+        val_loss = loss_fn(val_outputs, val_targets).item()
+    
+    # Append losses
+    train_losses.append(train_loss)
+    val_losses.append(val_loss)
+    
+    # Print loss every 100 epochs
+    if epoch % 100 == 0:
+        print(f'epoch: {epoch}, train loss: {train_loss:.4f}, val loss: {val_loss:.4f}')
+
+# Plot training and validation loss over epochs
+plt.figure(figsize=(12, 6))
+plt.plot(train_losses, label='Training Loss')
+plt.plot(val_losses, label='Validation Loss')
+plt.legend()
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training and Validation Loss over Epochs')
+plt.show()
+# Function to optimize the action for a given t
+
+def optimize_action(t):
+    observations = all_observations[t-window_size-1:t-1]
+    actions = all_actions[t-window_size:t-1]
+
+    model = gp.Model("model")
+    grb_action = model.addVar(lb=0, ub=2, vtype=gp.GRB.INTEGER, name="action")
+    observation_approx = model.addVar(lb=-gp.GRB.INFINITY, ub=60, name="observation_approx")
+    model.setObjective(observation_approx, gp.GRB.MAXIMIZE)
+
+    input_vars = []
+    for obs in observations:
+        input_vars.append(model.addVar(lb=obs, ub=obs, name="observation"+str(obs)))
+    for act in actions:
+        input_vars.append(model.addVar(lb=act, ub=act, name="action"+str(act)))
+    input_vars.append(grb_action)
+
+    pred_constr = add_predictor_constr(model, nn_model, input_vars, observation_approx)
+    pred_constr.print_stats()
+
+    model.update()
+    model.Params.TimeLimit = 20
+    model.Params.MIPGap = 0.1
+    model.optimize()
+
+    optimal_action = grb_action.x
+    predicted_observation = observation_approx.x
+    return optimal_action, predicted_observation
+
+# Optimize for all t
+optimal_actions = []
+predicted_observations = []
+nn_predictions_before_optimization = []
+
+for t in range(window_size+1, num_timesteps):
+    input = np.concatenate([all_observations[t-window_size-1:t-1], all_actions[t-window_size:t]], axis=0)
+    input = torch.tensor(input, dtype=torch.float32)
+    nn_prediction = nn_model(input).item()
+    nn_predictions_before_optimization.append(nn_prediction)
+    
+    optimal_action, predicted_observation = optimize_action(t)
+    optimal_actions.append(optimal_action)
+    predicted_observations.append(predicted_observation)
+    print(f't: {t}, optimal action: {optimal_action}, predicted observation: {predicted_observation}')
+
+# Create a DataFrame to compare the predictions
+data = {
+    "timestep": range(window_size+1, num_timesteps),
+    "original_observations": all_observations[window_size:num_timesteps-1],
+    "nn_predictions_before_optimization": nn_predictions_before_optimization,
+    "predicted_observations_after_optimization": predicted_observations,
+    "optimal_actions": optimal_actions
+}
+df = pd.DataFrame(data)
+
+# Display the DataFrame
+print(df)
+
+# Plot the results
+plt.figure(figsize=(12, 6))
+plt.plot(df["timestep"], df["original_observations"], label='Original Observations')
+plt.plot(df["timestep"], df["nn_predictions_before_optimization"], label='NN Predictions Before Optimization')
+plt.plot(df["timestep"], df["predicted_observations_after_optimization"], label='Predicted Observations After Optimization')
+plt.legend()
+plt.xlabel('Timestep')
+plt.ylabel('Observation Value')
+plt.title('Comparing Predictions and Optimizations')
+plt.show()
+
+plt.figure(figsize=(12, 6))
+plt.plot(df["timestep"], df["optimal_actions"], label='Optimal Actions')
+plt.xlabel('Timestep')
+plt.ylabel('Action Value')
+plt.title('Optimal Actions Over Time')
+plt.legend()
+plt.show()
+
+# Scatter plot to compare predicted vs. actual values on validation set
+val_pred = []
+val_true = []
+
+with torch.no_grad():
+    for t in range(window_size+1, val_size):
+        input = np.concatenate([val_observations[t-window_size-1:t-1], val_actions[t-window_size:t]], axis=0)
+        input = torch.tensor(input, dtype=torch.float32)
+        output = nn_model(input)
+        val_pred.append(output.item())
+        val_true.append(val_observations[t-1])
+
+val_pred_np = np.array(val_pred)
+val_true_np = np.array(val_true)
+
+plt.figure(figsize=(10, 6))
+plt.scatter(val_true_np, val_pred_np, color='blue')
+plt.plot([val_true_np.min(), val_true_np.max()], [val_true_np.min(), val_true_np.max()], 'r--')
+plt.xlabel('Actual Output')
+plt.ylabel('Predicted Output')
+plt.title('Predicted vs Actual Output on Validation Set')
+plt.grid(True)
+plt.show()
