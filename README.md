@@ -5,5 +5,4 @@ This repository contains a collection of data analysis projects focusing on diff
 Contents
 Optimization: Projects related to mathematical and computational optimization techniques.
 Statistical Data Analysis: Projects covering statistical modeling, hypothesis testing, and exploratory data analysis.
-.pynb_checkpoints: Auto-generated Jupyter Notebook checkpoints (not manually curated).
 Explore each folder for in-depth explanations and implementation details. 
