@@ -1,0 +1,50 @@
+# Optimization Projects
+
+This directory contains various optimization projects that apply mathematical modeling, machine learning, and algorithmic techniques to solve real-world problems. These projects cover a range of domains including production planning, energy management, reaction optimization, and sports team selection, showcasing the use of optimization tools such as Gurobi and deep neural networks.
+
+## Contents
+
+- **Optimization airlines/**  
+  A subfolder containing optimization projects related to airline operations.
+
+- **Comprehensive Case Study Optimization of a Continuous Stirred-Tank Reactor (CSTR)**  
+  Detailed case study applying optimization techniques to chemical reactor operations.
+
+- **Fantasy Football Team Selection Optimization.ipynb**  
+  Notebook that optimizes fantasy football team selection based on player statistics and constraints.
+
+- **Furniture Production Optimization – WoodCraft Wonders.ipynb**  
+  Optimization of furniture production processes to maximize efficiency and minimize costs.
+
+- **Optimization of a Second Order Reaction Using Gurobi.ipynb**  
+  Application of the Gurobi solver to optimize chemical reaction parameters for improved outcomes.
+
+- **Optimization_Production_distribution_optimization.ipynb**  
+  Model to optimize production and distribution decisions for supply chain management.
+
+- **Optimization_Utilizing Renewables and Energy Storage to Minimize Electricity Use.ipynb**  
+  Optimization of renewable energy utilization and energy storage to reduce electricity consumption.
+
+- **Optimizing Deep Neural Network (DNN) for Embedded System.ipy**  
+  Efforts to optimize deep neural network performance specifically for embedded systems.
+
+- **Optimizing Solar Energy Use with Forecasting & Gurobi.ipynb**  
+  Combines forecasting methods and optimization techniques to improve solar energy usage.
+
+- **Production planning optimization problem for a single facility over 5 months.ipynb**  
+  Production planning model focusing on optimizing a single facility’s output over a 5-month horizon.
+
+## Requirements
+
+- Python 3.7 or higher
+- Jupyter Notebook or JupyterLab for `.ipynb` files
+- Gurobi Optimizer with a valid license for relevant notebooks
+- Key Python libraries including:
+  - pandas
+  - numpy
+  - matplotlib
+  - gurobipy
+  - scikit-learn
+  - tensorflow or pytorch (for DNN optimization)
+
+
