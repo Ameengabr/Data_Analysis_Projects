@@ -37,29 +37,4 @@ Each project is implemented in Python (primarily using Jupyter Notebooks) and ta
 * **Resource Allocation & Scheduling**
 * **Model Deployment for Embedded Systems**
 
-## 🚀 How to Use
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/Optimization.git
-   cd Optimization
-   ```
-2. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Open any project notebook:
-
-   ```bash
-   jupyter notebook
-   ```
-4. Run the cells sequentially to see the full workflow and results.
-
-
-## 📜 License
-
-This repository is licensed under the **MIT License** — feel free to use, modify, and share with attribution.
-
 
