@@ -49,14 +49,6 @@ This project showcases a full project-planning workflow, from initial task organ
 - Stakeholder-ready visuals and presentation materials.  
 
 
----
 
-## 🚀 How to Use This Repo  
-1. Clone the repository:  
-   ```bash
-   git clone https://github.com/your-username/automatidata-fare-estimation.git
-   ```  
-2. Review the `/docs` folder for the project proposal and PACE strategy document.  
-3. Explore `/notebooks` for EDA, regression modeling, and results.  
 
 
