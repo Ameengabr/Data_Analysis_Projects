@@ -1,4 +1,4 @@
-# Automatidata x NYC Taxi & Limousine Commission: Fare Estimation Project  
+# Automatidata NYC Taxi & Limousine Commission: Fare Estimation Project  
 
 The project demonstrates the use of the **PACE workflow (Plan → Analyze → Construct → Execute)** to design a strategy for building a **taxi fare estimation model** for the **New York City Taxi and Limousine Commission (TLC)**.  
 
